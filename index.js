@@ -151,3 +151,47 @@ app.get('/uc', (req, res) => {
         res.render('yourcomplaints', { complaints: results });
     });
 });
+
+//admin panel; 06/05/2024 9:37
+
+const correctPassword = 'admin123';
+
+const authenticateadmin = (req, res, next) => {
+    
+    if (req.session.adminApproved) {
+        
+        next();
+    } else {
+        res.redirect('/adminpassword');
+    }
+};
+
+app.get('/admin',authenticateadmin, (req, res) => {
+   
+        res.render('admin.ejs');
+    
+});
+
+app.get('/adminpassword', (req, res) => {
+   
+    res.render('adminpassword.ejs');
+
+});
+
+app.post('/adminpassword', (req, res) => {
+    const { password } = req.body;
+
+    try {
+        if (password === correctPassword) {
+            req.session.adminApproved = true;
+            res.redirect('/admin');
+        } else {
+            res.status(401).send('Incorrect password');
+        }
+    } catch (error) {
+        // Log the error for debugging purposes
+        console.error('An error occurred:', error);
+        // Send an appropriate response to the client
+        res.status(500).send('Internal Server Error');
+    }
+});
