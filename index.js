@@ -166,10 +166,8 @@ const authenticateadmin = (req, res, next) => {
     }
 };
 
-app.get('/admin',authenticateadmin, (req, res) => {
-   
-        res.render('admin.ejs');
-    
+app.get('/admin',authenticateadmin, (req , res)=>{
+            res.render('admin.ejs');
 });
 
 app.get('/adminpassword', (req, res) => {
@@ -195,3 +193,67 @@ app.post('/adminpassword', (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+
+
+//ADMIN 11-05-2024
+// APPROVED COMPLAINTS CODE 
+//aproveed complaints
+
+//get request for approve
+app.get('/approve',(req, res) => {
+
+    const selectQuery = 'SELECT * FROM complaints ';
+    
+
+    db.query(selectQuery, (err, results) => {
+        if (err) {
+            throw err;
+        }
+        
+     
+        res.render('apc', { complaints: results });
+    });
+});
+
+//
+app.get('/apc/:referenceID', (req, res) => {
+    const referenceID = req.params.referenceID;
+
+    // Get the row from complaints table based on referenceID
+    db.query('SELECT * FROM complaints WHERE referenceID = ?', [referenceID], (error, results) => {
+        if (error) {
+            console.error('Error fetching complaint:', error);
+            res.status(500).send('Error fetching complaint');
+            return;
+        }
+
+        if (results.length === 0) {
+            res.status(404).send('Complaint not found');
+            return;
+        }
+
+        const complaint = results[0];
+
+        // Insert the row into approvedcomplaints table
+        db.query('INSERT INTO approvedcomplaints (complaintType, name, aadharID, phoneNumber, complaintMessage, referenceID, email, created_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [complaint.complaintType, complaint.name, complaint.aadharID, complaint.phoneNumber, complaint.complaintMessage, complaint.referenceID, complaint.email, complaint.created_at, complaint.status], (error, results) => {
+            if (error) {
+                console.error('Error approving complaint:', error);
+                res.status(500).send('Error approving complaint');
+                return;
+            }
+
+            // Delete the row from complaints table
+            db.query('DELETE FROM complaints WHERE referenceID = ?', [referenceID], (error, results) => {
+                if (error) {
+                    console.error('Error removing complaint:', error);
+                    res.status(500).send('Error removing complaint');
+                    return;
+                }
+
+                res.redirect('/approve');
+            });
+        });
+    });
+});
+
+//
